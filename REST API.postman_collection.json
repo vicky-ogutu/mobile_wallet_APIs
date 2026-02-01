@@ -1,0 +1,238 @@
+{
+	"info": {
+		"_postman_id": "56b33b6e-3762-4622-ade8-369bdb9f97a8",
+		"name": "REST API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "10327920",
+		"_collection_link": "https://interstellar-rocket-91512.postman.co/workspace/My-Workspace~3eb6fa58-b6f5-4571-80e8-4e04e7b2e6de/collection/10327920-56b33b6e-3762-4622-ade8-369bdb9f97a8?action=share&source=collection_link&creator=10327920"
+	},
+	"item": [
+		{
+			"name": "Customer-API",
+			"item": [
+				{
+					"name": "Get All Customers",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": 1,\r\n    \"firstName\": \"Ceasar\",\r\n\t\"lastName\": \"Kanja\",\r\n    \"emailId\": \"ceasarmwangi@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/v1/customers/",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Customer Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"customerId\": \"CUST1001\",\r\n    \"pin\": \"1234\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/v1/customers/login",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Account-API",
+			"item": [
+				{
+					"name": "Get All Accounts",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": 1,\r\n    \"firstName\": \"Ceasar\",\r\n\t\"lastName\": \"Kanja\",\r\n    \"emailId\": \"ceasarmwangi@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/v1/accounts/",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"accounts",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Account Balance",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"customerId\": \"CUST1001\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/v1/accounts/balance",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"accounts",
+								"balance"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Transaction-API",
+			"item": [
+				{
+					"name": "Get All Transactions",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": 1,\r\n    \"firstName\": \"Ceasar\",\r\n\t\"lastName\": \"Kanja\",\r\n    \"emailId\": \"ceasarmwangi@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/v1/transactions/",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get last-100-transactions",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"customerId\": \"CUST1001\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/v1/transactions/last-100-transactions",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"last-100-transactions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Money",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"customerId\": \"CUST1001\",\r\n    \"accountFrom\": \"ACT1001\",\r\n    \"accountTo\": \"ACT1002\",\r\n    \"amount\": 5000\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/v1/transactions/send-money",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"send-money"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
