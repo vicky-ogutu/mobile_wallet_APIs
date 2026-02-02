@@ -23,4 +23,23 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 	// TODO : Implement the query and function below and to return all customers whose Email contains  'gmail'
 	// @Query("?")
 	// List<Customer> findAllCustomersWhoseEmailContainsGmail();
+
+
+
+	Optional<Customer> findByEmail(String email);
+
+	@Modifying
+	@Transactional
+	@Query("DELETE FROM Customer c WHERE c.customerId = :customerId")
+	int deleteCustomerByCustomerId(@Param("customerId") String customerId);
+
+	@Modifying
+	@Transactional
+	@Query("UPDATE Customer c SET c.firstName = :firstName WHERE c.customerId = :customerId")
+	int updateCustomerByCustomerId(
+			@Param("firstName") String firstName,
+			@Param("customerId") String customerId);
+
+	@Query("SELECT c FROM Customer c WHERE c.email LIKE '%gmail%'")
+	List<Customer> findAllCustomersWhoseEmailContainsGmail();
 }
