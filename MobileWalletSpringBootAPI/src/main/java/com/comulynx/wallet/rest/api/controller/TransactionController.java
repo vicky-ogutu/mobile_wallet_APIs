@@ -1,7 +1,9 @@
 package com.comulynx.wallet.rest.api.controller;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,12 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.comulynx.wallet.rest.api.AppUtilities;
 import com.comulynx.wallet.rest.api.exception.ResourceNotFoundException;
@@ -29,133 +26,144 @@ import com.google.gson.JsonObject;
 @RestController
 @RequestMapping("/api/v1/transactions")
 public class TransactionController {
-	private static final Logger logger = LoggerFactory.getLogger(TransactionController.class);
 
+	private static final Logger logger = LoggerFactory.getLogger(TransactionController.class);
 	private Gson gson = new Gson();
 
 	@Autowired
 	private TransactionRepository transactionRepository;
 	@Autowired
 	private AccountRepository accountRepository;
+
 	@GetMapping("/")
 	public List<Transaction> getAllTransaction() {
 		return transactionRepository.findAll();
 	}
-	
 
 	/**
 	 * Get Last 100 Transactions By CustomerId
-	 * 
-	 * @param request
-	 * @return
-	 * @throws ResourceNotFoundException
 	 */
-	@PostMapping(value = "/last-100-transactions", consumes = { MediaType.APPLICATION_JSON_UTF8_VALUE},produces = { MediaType.APPLICATION_JSON_VALUE})
+	@PostMapping(
+			value = "/last-100-transactions",
+			consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> getLast100TransactionsByCustomerId(@RequestBody String request)
 			throws ResourceNotFoundException {
+
 		try {
-			final JsonObject req = gson.fromJson(request, JsonObject.class);
+			JsonObject req = gson.fromJson(request, JsonObject.class);
 			String customerId = req.get("customerId").getAsString();
 
-			// TODO : Add login here to get Last 100 Transactions By CustomerId
-			List<Transaction> last100Transactions = null;
+			List<Transaction> transactions = transactionRepository
+					.findTransactionsByCustomerId(customerId)
+					.orElseThrow(() -> new ResourceNotFoundException("No transactions found"));
 
-			return ResponseEntity.ok().body(gson.toJson(last100Transactions));
+			List<Transaction> last100 = transactions.stream()
+					.sorted(Comparator.comparingLong(Transaction::getId).reversed())
+					.limit(100)
+					.collect(Collectors.toList());
+
+			return ResponseEntity.ok(gson.toJson(last100));
+
 		} catch (Exception ex) {
-			logger.info("Exception {}", AppUtilities.getExceptionStacktrace(ex));
-
+			logger.error("Exception {}", AppUtilities.getExceptionStacktrace(ex));
 			return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-
 		}
 	}
 
-	@PostMapping(value = "/send-money", consumes = { MediaType.APPLICATION_JSON_UTF8_VALUE},produces = { MediaType.APPLICATION_JSON_VALUE})
-	public ResponseEntity<?> doSendMoneyTransaction(@RequestBody String request) throws ResourceNotFoundException {
-		try {
-			
-	        Random rand = new Random(); 
+	@PostMapping(
+			value = "/send-money",
+			consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+			produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> doSendMoneyTransaction(@RequestBody String request)
+			throws ResourceNotFoundException {
 
-	        
+		try {
+			Random rand = new Random();
+			JsonObject req = gson.fromJson(request, JsonObject.class);
 			JsonObject response = new JsonObject();
 
-			final JsonObject balanceRequest = gson.fromJson(request, JsonObject.class);
-			String customerId = balanceRequest.get("customerId").getAsString();
-			String accountFrom = balanceRequest.get("accountFrom").getAsString();
-			String accountTo = balanceRequest.get("accountTo").getAsString();
-			double amount = balanceRequest.get("amount").getAsDouble();
+			String customerId = req.get("customerId").getAsString();
+			String accountFrom = req.get("accountFrom").getAsString();
+			String accountTo = req.get("accountTo").getAsString();
+			double amount = req.get("amount").getAsDouble();
 
-			Account senderAccount = accountRepository.findAccountByAccountNo(accountFrom)
-					.orElseThrow(() -> new ResourceNotFoundException("Account " + accountFrom + " NOT found for this"));
+			Account sender = accountRepository.findAccountByAccountNo(accountFrom)
+					.orElseThrow(() -> new ResourceNotFoundException("Sender account not found"));
 
-			Account beneficiaryAccount = accountRepository.findAccountByAccountNo(accountTo)
-					.orElseThrow(() -> new ResourceNotFoundException("Account " + accountTo + " NOT found for this"));
+			Account receiver = accountRepository.findAccountByAccountNo(accountTo)
+					.orElseThrow(() -> new ResourceNotFoundException("Receiver account not found"));
 
-  
+			if (sender.getBalance() < amount) {
+				throw new RuntimeException("Insufficient balance");
+			}
 
-	        
-			String debitTransactionId = "TRN"+rand.nextInt(100000)+1000;
-			String creditTransactionId = "TRN"+rand.nextInt(100000)+1001;
+			// Update balances
+			sender.setBalance(sender.getBalance() - amount);
+			receiver.setBalance(receiver.getBalance() + amount);
+			accountRepository.save(sender);
+			accountRepository.save(receiver);
 
-			// Debit
-			Transaction transactionDebit = new Transaction();
-			transactionDebit.setTransactionId(debitTransactionId);
-			transactionDebit.setCustomerId(customerId);
-			transactionDebit.setAccountNo(senderAccount.getAccountNo());
-			transactionDebit.setAmount(amount);
-			transactionDebit.setBalance(senderAccount.getBalance() - amount);
-			transactionDebit.setTransactionType("FT");
-			transactionDebit.setDebitOrCredit("Debit");
-			transactionRepository.save(transactionDebit);
-			// Credit
-			Transaction transactionCredit = new Transaction();
-			transactionCredit.setTransactionId(creditTransactionId);
-			transactionCredit.setCustomerId(beneficiaryAccount.getCustomerId());
-			transactionCredit.setAccountNo(beneficiaryAccount.getAccountNo());
-			transactionCredit.setAmount(amount);
-			transactionCredit.setBalance(beneficiaryAccount.getBalance() + amount);
-			transactionCredit.setTransactionType("FT");
-			transactionCredit.setDebitOrCredit("Credit");
-			transactionRepository.save(transactionCredit);
+			// Debit transaction
+			Transaction debit = new Transaction();
+			debit.setTransactionId("TRN" + rand.nextInt(100000));
+			debit.setCustomerId(customerId);
+			debit.setAccountNo(accountFrom);
+			debit.setAmount(amount);
+			debit.setBalance(sender.getBalance());
+			debit.setTransactionType("FT");
+			debit.setDebitOrCredit("Debit");
+			transactionRepository.save(debit);
+
+			// Credit transaction
+			Transaction credit = new Transaction();
+			credit.setTransactionId("TRN" + rand.nextInt(100000));
+			credit.setCustomerId(receiver.getCustomerId());
+			credit.setAccountNo(accountTo);
+			credit.setAmount(amount);
+			credit.setBalance(receiver.getBalance());
+			credit.setTransactionType("FT");
+			credit.setDebitOrCredit("Credit");
+			transactionRepository.save(credit);
 
 			response.addProperty("response_status", true);
 			response.addProperty("response_message", "Transaction Successful");
 
-//			return ResponseEntity.ok().body(gson.toJson(response));
-			return ResponseEntity.status(200).body(gson.toJson(response));
+			return ResponseEntity.ok(gson.toJson(response));
+
 		} catch (Exception ex) {
-			logger.info("Exception {}", AppUtilities.getExceptionStacktrace(ex));
-
+			logger.error("Exception {}", AppUtilities.getExceptionStacktrace(ex));
 			return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-
 		}
 	}
 
 	/**
-	 * Should return last 5 transactions from the database
-	 * 
-	 * @param request
-	 * @return
-	 * @throws ResourceNotFoundException
+	 * Mini statement – last 5 transactions
 	 */
-	@PostMapping(value = "/mini-statement", consumes = { MediaType.APPLICATION_JSON_UTF8_VALUE},produces = { MediaType.APPLICATION_JSON_VALUE})
+	@PostMapping(
+			value = "/mini-statement",
+			consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> getMiniStatementByCustomerIdAndAccountNo(@RequestBody String request)
 			throws ResourceNotFoundException {
+
 		try {
-			final JsonObject balanceRequest = gson.fromJson(request, JsonObject.class);
-			String customerId = balanceRequest.get("customerId").getAsString();
-			String accountNo = balanceRequest.get("accountNo").getAsString();
+			JsonObject req = gson.fromJson(request, JsonObject.class);
+			String customerId = req.get("customerId").getAsString();
+			String accountNo = req.get("accountNo").getAsString();
 
-			// FIXME: Should return last 5 transactions from the database
-			List<Transaction> miniStatement = transactionRepository
-					.getMiniStatementUsingCustomerIdAndAccountNo(customerId, accountNo);
+			List<Transaction> transactions = transactionRepository
+					.getMiniStatementUsingCustomerIdAndAccountNo(customerId, accountNo)
+					.stream()
+					.sorted(Comparator.comparingLong(Transaction::getId).reversed())
+					.limit(5)
+					.collect(Collectors.toList());
 
-			return ResponseEntity.ok().body(gson.toJson(miniStatement));
+			return ResponseEntity.ok(gson.toJson(transactions));
+
 		} catch (Exception ex) {
-			logger.info("Exception {}", AppUtilities.getExceptionStacktrace(ex));
-
+			logger.error("Exception {}", AppUtilities.getExceptionStacktrace(ex));
 			return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-
 		}
 	}
-
 }
