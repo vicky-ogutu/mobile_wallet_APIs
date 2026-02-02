@@ -1,9 +1,15 @@
 package com.comulynx.wallet.rest.api.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import jakarta.transaction.Transactional;
 
 import com.comulynx.wallet.rest.api.model.Customer;
 
@@ -12,30 +18,20 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
 	Optional<Customer> findByCustomerId(String customerId);
 
-	// TODO : Implement the query and function below to delete a customer using Customer Id
-	// @Query("?")
-	// int deleteCustomerByCustomerId(String customer_id);
-
-	// TODO : Implement the query and function below to update customer firstName using Customer Id
-	// @Query("?")
-	// int updateCustomerByCustomerId(String firstName, String customer_id);
-	
-	// TODO : Implement the query and function below and to return all customers whose Email contains  'gmail'
-	// @Query("?")
-	// List<Customer> findAllCustomersWhoseEmailContainsGmail();
-
-
-
 	Optional<Customer> findByEmail(String email);
 
-	@Modifying
 	@Transactional
+	@Modifying
 	@Query("DELETE FROM Customer c WHERE c.customerId = :customerId")
 	int deleteCustomerByCustomerId(@Param("customerId") String customerId);
 
-	@Modifying
 	@Transactional
-	@Query("UPDATE Customer c SET c.firstName = :firstName WHERE c.customerId = :customerId")
+	@Modifying
+	@Query("""
+		UPDATE Customer c
+		SET c.firstName = :firstName
+		WHERE c.customerId = :customerId
+	""")
 	int updateCustomerByCustomerId(
 			@Param("firstName") String firstName,
 			@Param("customerId") String customerId);

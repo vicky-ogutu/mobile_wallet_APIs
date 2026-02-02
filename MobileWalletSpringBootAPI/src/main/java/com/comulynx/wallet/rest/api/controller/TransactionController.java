@@ -8,6 +8,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,25 +31,30 @@ import com.google.gson.JsonObject;
 public class TransactionController {
 
 	private static final Logger logger = LoggerFactory.getLogger(TransactionController.class);
-	private Gson gson = new Gson();
+	private final Gson gson = new Gson();
 
 	@Autowired
 	private TransactionRepository transactionRepository;
+
 	@Autowired
 	private AccountRepository accountRepository;
 
+	// -------------------------------------------------------------------------
+	// Get all transactions
+	// -------------------------------------------------------------------------
 	@GetMapping("/")
 	public List<Transaction> getAllTransaction() {
 		return transactionRepository.findAll();
 	}
 
-	/**
-	 * Get Last 100 Transactions By CustomerId
-	 */
+	// -------------------------------------------------------------------------
+	// Last 100 transactions by customerId
+	// -------------------------------------------------------------------------
 	@PostMapping(
 			value = "/last-100-transactions",
-			consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
-			produces = MediaType.APPLICATION_JSON_VALUE)
+			consumes = MediaType.APPLICATION_JSON_VALUE,
+			produces = MediaType.APPLICATION_JSON_VALUE
+	)
 	public ResponseEntity<?> getLast100TransactionsByCustomerId(@RequestBody String request)
 			throws ResourceNotFoundException {
 
@@ -71,10 +79,14 @@ public class TransactionController {
 		}
 	}
 
+	// -------------------------------------------------------------------------
+	// Send money
+	// -------------------------------------------------------------------------
 	@PostMapping(
 			value = "/send-money",
-			consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
-			produces = MediaType.APPLICATION_JSON_VALUE)
+			consumes = MediaType.APPLICATION_JSON_VALUE,
+			produces = MediaType.APPLICATION_JSON_VALUE
+	)
 	public ResponseEntity<?> doSendMoneyTransaction(@RequestBody String request)
 			throws ResourceNotFoundException {
 
@@ -137,13 +149,14 @@ public class TransactionController {
 		}
 	}
 
-	/**
-	 * Mini statement – last 5 transactions
-	 */
+	// -------------------------------------------------------------------------
+	// Mini statement (last 5 transactions)
+	// -------------------------------------------------------------------------
 	@PostMapping(
 			value = "/mini-statement",
-			consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
-			produces = MediaType.APPLICATION_JSON_VALUE)
+			consumes = MediaType.APPLICATION_JSON_VALUE,
+			produces = MediaType.APPLICATION_JSON_VALUE
+	)
 	public ResponseEntity<?> getMiniStatementByCustomerIdAndAccountNo(@RequestBody String request)
 			throws ResourceNotFoundException {
 
@@ -152,12 +165,19 @@ public class TransactionController {
 			String customerId = req.get("customerId").getAsString();
 			String accountNo = req.get("accountNo").getAsString();
 
-			List<Transaction> transactions = transactionRepository
-					.getMiniStatementUsingCustomerIdAndAccountNo(customerId, accountNo)
-					.stream()
-					.sorted(Comparator.comparingLong(Transaction::getId).reversed())
-					.limit(5)
-					.collect(Collectors.toList());
+			// Pageable: first page, 5 records, latest first
+			Pageable pageable = PageRequest.of(
+					0,
+					5,
+					Sort.by("id").descending()
+			);
+
+			List<Transaction> transactions =
+					transactionRepository.getMiniStatementUsingCustomerIdAndAccountNo(
+							customerId,
+							accountNo,
+							pageable
+					);
 
 			return ResponseEntity.ok(gson.toJson(transactions));
 
@@ -167,3 +187,4 @@ public class TransactionController {
 		}
 	}
 }
+
